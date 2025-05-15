@@ -60,6 +60,7 @@ const ProfilePage = () => {
             onChange={(e) => setBio(e.target.value)}
             placeholder="Write profile bio..."
             required
+            value={bio}
             className="p-2 border border-gray-500 rounded-md 
             focus:outline-none focus:ring-2 focus:ring-violet-500"
             rows={4}
