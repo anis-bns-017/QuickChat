@@ -1,9 +1,9 @@
- 
 import cloudinary from "../lib/cloudinary.js";
 import { protectRoute } from "../middleware/auth.js";
 import mongoose from "mongoose";
 import Message from "../models/Message.js";
 import User from "../models/User.js";
+import { io, userSocketMap } from "../server.js";
 
 export const getUsersForSidebar = async () => {
   try {
@@ -111,11 +111,19 @@ export const sendMessage = async (req, res) => {
       image: imageUrl,
     });
 
+    //emit the new message to the receiver's socket
+    const receiverSocketId = userSocketMap[receiverId];
+
+    if (receiverSocketId) {
+      io.to(receiverSocketId).emit("getMessage", newMessage);
+    }
+
     res.json({
       success: true,
       message: "Message sent successfully",
       newMessage,
     });
+    
   } catch (error) {
     console.log(error.message);
     res.json({
