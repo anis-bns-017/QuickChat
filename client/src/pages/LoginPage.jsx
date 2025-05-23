@@ -1,5 +1,6 @@
-import React, { useState } from "react";
+import React, { useContext, useState } from "react";
 import assets from "../assets/assets";
+import { AuthContext } from "../../context/AuthContext";
 
 const LoginPage = () => {
   const [currState, setCurrState] = useState("Sign up");
@@ -9,25 +10,36 @@ const LoginPage = () => {
   const [bio, SetBio] = useState("");
   const [isDataSubmitted, setIsDataSubmitted] = useState(false);
 
-  const onSumbitHandler = (e) => {
+  const { login } = useContext(AuthContext);
+
+  const onSubmitHandler = (e) => {
     e.preventDefault();
 
     if (currState === "Sign up" && !isDataSubmitted) {
       setIsDataSubmitted(true);
       return;
     }
+
+    login(currState === "Sign up" ? "signup" : "login", {
+      fullName,
+      email,
+      password,
+      bio,
+    });
   };
+
+
   return (
     <div
       className="min-h-screen bg-cover bg-center flex items-center
-      justce gap-8 sm:justify-evenly
+      justify-center gap-8 sm:justify-evenly
       max-sm:flex-col backdrop-blur-2xl"
     >
       {/* ------ Left ------ */}
       <img src={assets.logo_big} alt="" className="w-[min(30vw, 250px)]" />
       {/* ---------right-------- */}
       <form
-        onSubmit={onSumbitHandler}
+        onSubmit={onSubmitHandler}
         className="border-2 bg-white/8 text-white border-gray-500
        p-6 flex flex-col gap-6 rounded-lg shadow-lg"
       >
