@@ -1,7 +1,16 @@
 import { generateToken } from "../lib/utils.js";
 import User from "../models/User.js";
-import cloudinary from "../lib/cloudinary.js";
+//import cloudinary from "../lib/cloudinary.js";
 import bcrypt from "bcryptjs";
+
+import { v2 as cloudinary } from "cloudinary";
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 export const signup = async (req, res) => {
   const { fullName, email, password, bio } = req.body;
@@ -9,25 +18,25 @@ export const signup = async (req, res) => {
   try {
     // Validation
     if (!fullName || !email || !password || !bio) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "All fields are required" 
+      return res.status(400).json({
+        success: false,
+        message: "All fields are required",
       });
     }
 
     if (password.length < 6) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Password must be at least 6 characters" 
+      return res.status(400).json({
+        success: false,
+        message: "Password must be at least 6 characters",
       });
     }
 
     // Check if user exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ 
-        success: false, 
-        message: "Email already in use" 
+      return res.status(409).json({
+        success: false,
+        message: "Email already in use",
       });
     }
 
@@ -56,7 +65,6 @@ export const signup = async (req, res) => {
       user: userResponse,
       token,
     });
-
   } catch (error) {
     console.error("Signup error:", error);
     res.status(500).json({
@@ -72,27 +80,27 @@ export const login = async (req, res) => {
 
     // Validation
     if (!email || !password) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Email and password are required" 
+      return res.status(400).json({
+        success: false,
+        message: "Email and password are required",
       });
     }
 
     // Find user
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Invalid credentials" 
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
       });
     }
 
     // Check password
     const isPasswordCorrect = await bcrypt.compare(password, user.password);
     if (!isPasswordCorrect) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Invalid credentials" 
+      return res.status(401).json({
+        success: false,
+        message: "Invalid credentials",
       });
     }
 
@@ -109,7 +117,6 @@ export const login = async (req, res) => {
       userData,
       token,
     });
-
   } catch (error) {
     console.error("Login error:", error);
     res.status(500).json({
@@ -140,7 +147,6 @@ export const checkAuth = async (req, res) => {
       message: "Authenticated",
       user: userResponse,
     });
-
   } catch (error) {
     console.error("Auth check error:", error);
     res.status(500).json({
@@ -152,31 +158,39 @@ export const checkAuth = async (req, res) => {
 
 export const updateProfile = async (req, res) => {
   try {
-    const { profilePic, bio, fullName } = req.body;
-    const userId = req.user._id;
+    const { bio, fullName, profilePic } = req.body;
+    const userId = req.user?._id;
 
-    // Validation
     if (!bio || !fullName) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Bio and full name are required" 
+      return res.status(400).json({
+        success: false,
+        message: "Bio and full name are required",
       });
     }
 
-    let updateData = { 
-      bio, 
-      fullName,
-      updatedAt: Date.now() 
-    };
+    if (!userId) {
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: User not found in request",
+      });
+    }
 
-    // Handle profile picture upload
+    let uploadedPicUrl = null;
+
+    // Upload image to Cloudinary if profilePic is provided
     if (profilePic) {
       try {
-        const upload = await cloudinary.uploader.upload(profilePic, {
-          folder: "profile_pics",
-          upload_preset: "your_upload_preset" // Optional
+        console.log("Uploading to Cloudinary...");
+        const uploadResult = await cloudinary.uploader.upload(profilePic, {
+          folder: "Quick_chat",
+          transformation: [
+            { width: 400, height: 400, crop: "fill" },
+            { quality: "auto" },
+          ],
         });
-        updateData.profilePic = upload.secure_url;
+
+        uploadedPicUrl = uploadResult.secure_url;
+        console.log("Upload successful:", uploadedPicUrl);
       } catch (uploadError) {
         console.error("Cloudinary upload error:", uploadError);
         return res.status(500).json({
@@ -186,24 +200,30 @@ export const updateProfile = async (req, res) => {
       }
     }
 
-    // Update user
     const updatedUser = await User.findByIdAndUpdate(
       userId,
-      updateData,
-      { 
-        new: true,
-        select: "-password -__v" // Exclude sensitive fields
-      }
+      {
+        bio,
+        fullName,
+        ...(uploadedPicUrl && { profilePic: uploadedPicUrl }),
+      },
+      { new: true }
     );
+
+    if (!updatedUser) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
 
     res.status(200).json({
       success: true,
       message: "Profile updated successfully",
       user: updatedUser,
     });
-
   } catch (error) {
-    console.error("Update profile error:", error);
+    console.error("Error updating profile:", error);
     res.status(500).json({
       success: false,
       message: "Internal server error",

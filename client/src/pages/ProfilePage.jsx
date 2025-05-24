@@ -1,17 +1,50 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import assets from "../assets/assets";
+import { AuthContext } from "../../context/AuthContext";
+import { useContext } from "react";
 
 const ProfilePage = () => {
+  const { authUser, updateProfile } = useContext(AuthContext);
+
   const [selectedImage, setSelectedImage] = useState(null);
   const navigate = useNavigate();
-  const [name, setName] = useState("Martin Johnson");
-  const [bio, setBio] = useState("Hi Everyone, I am using QuickChat");
+  const [name, setName] = useState(authUser?.fullName || "");
+  const [bio, setBio] = useState(authUser?.bio || "");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    navigate("/");
+
+    if (!selectedImage) {
+      await updateProfile({ fullName: name, bio });
+      navigate("/");
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.readAsDataURL(selectedImage);
+    reader.onloadend = async () => {
+      const base64Image = reader.result;
+      //console.log("Base64 Image:", base64Image);
+      await updateProfile({ fullName: name, bio, profilePic: base64Image });
+      navigate("/");
+    };
   };
+
+  // Function to get the profile picture source
+  const getProfilePicSrc = () => {
+    if (selectedImage) {
+      // Show newly selected image preview
+      return URL.createObjectURL(selectedImage);
+    } else if (authUser?.profilePic) {
+      // Show existing profile picture from database
+      return authUser.profilePic;
+    } else {
+      // Show default avatar
+      return assets.avatar_icon;
+    }
+  };
+
   return (
     <div
       className="min-h-screen bg-cover bg-no-repeat 
@@ -22,7 +55,10 @@ const ProfilePage = () => {
        border-2 border-gray-600 flex items-center justify-between
         max-sm:flex-col-reverse rounded-lg"
       >
-        <form className="flex flex-col gap-5 p-10 flex-1">
+        <form
+          onSubmit={handleSubmit}
+          className="flex flex-col gap-5 p-10 flex-1"
+        >
           <h3 className="text-lg">Profile Details</h3>
           <label
             htmlFor="avatar"
@@ -36,15 +72,16 @@ const ProfilePage = () => {
               hidden
             />
             <img
-              src={
-                selectedImage
-                  ? URL.createObjectURL(selectedImage)
-                  : assets.avatar_icon
-              }
-              alt=""
-              className={`w-12 h-12 ${selectedImage && "rounded-full"}`}
+              src={getProfilePicSrc() || "/placeholder.svg"}
+              alt="Profile"
+              className={`w-12 h-12 object-cover ${
+                selectedImage || authUser?.profilePic ? "rounded-full" : ""
+              }`}
             />
-            Upload Profile Image
+            {authUser?.profilePic
+              ? "Change Profile Image"
+              : "Upload Profile Image"}{" "}
+            v
           </label>
           <input
             onChange={(e) => setName(e.target.value)}
@@ -74,11 +111,27 @@ const ProfilePage = () => {
             Save
           </button>
         </form>
-        <img
-          className="max-w-44 aspect-square rounded-full mx-10 max-sm:mt-10"
-          src={assets.logo_icon}
-          alt=""
-        />
+
+        {/* Large profile picture display */}
+        <div className="mx-10 max-sm:mt-10">
+          <img
+            className={`max-w-44 aspect-square object-cover ${
+              selectedImage || authUser?.profilePic ? "rounded-full" : ""
+            }`}
+            src={getProfilePicSrc() || "/placeholder.svg"}
+            alt="Profile Preview"
+          />
+          {authUser?.profilePic && !selectedImage && (
+            <p className="text-center text-sm text-gray-400 mt-2">
+              Current Profile Picture
+            </p>
+          )}
+          {selectedImage && (
+            <p className="text-center text-sm text-green-400 mt-2">
+              New Image Preview
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

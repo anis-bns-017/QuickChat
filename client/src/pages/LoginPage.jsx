@@ -130,7 +130,7 @@ const LoginPage = () => {
               className="text-sm text-gray-600"
               onClick={() => setCurrState("Sign up")}
             >
-              Create an account{" "}
+              Create an account 
               <span className="font-medium text-violet-500 cursor-pointer">
                 Click here
               </span>
