@@ -14,7 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [onlineUsers, setOnlineUsers] = useState([]);
   const [socket, setSocket] = useState(null);
 
-  // Set up axios interceptor to include token in headers
+  // Set axios Authorization header when token changes
   useEffect(() => {
     if (token) {
       axios.defaults.headers.common["Authorization"] = `Bearer ${token}`;
@@ -33,7 +33,6 @@ export const AuthProvider = ({ children }) => {
         connectSocket(data.user);
       }
     } catch (error) {
-      // Clear token if unauthorized
       if (error.response?.status === 401) {
         setToken(null);
         setAuthUser(null);
@@ -51,8 +50,7 @@ export const AuthProvider = ({ children }) => {
         setAuthUser(data.userData);
         connectSocket(data.userData);
         toast.success(data.message);
-        axios.defaults.headers.common["token"] = data.token;
-        localStorage.setItem("token", data.token);
+        // No need to manually set axios header or localStorage here; handled by useEffect
       }
     } catch (error) {
       if (error.response?.status === 409) {
@@ -68,8 +66,6 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setAuthUser(null);
     setOnlineUsers([]);
-    toast.success("Logged out successfully");
-    axios.defaults.headers.common["token"] = null;
     if (socket) {
       socket.disconnect();
       setSocket(null);
@@ -92,7 +88,8 @@ export const AuthProvider = ({ children }) => {
   const connectSocket = (userData) => {
     if (!userData || socket) return; // prevent multiple connections
 
-    const newSocket = io("http://localhost:5000", {
+    const newSocket = io(backendUrl, {
+      // use backendUrl instead of hardcoded localhost
       path: "/socket.io",
       transports: ["websocket"],
       auth: {
@@ -118,7 +115,7 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (token) {
-      checkAuth(); // checks and sets authUser
+      checkAuth();
     }
   }, [token]);
 

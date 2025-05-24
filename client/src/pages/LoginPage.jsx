@@ -118,9 +118,9 @@ const LoginPage = () => {
           {currState === "Sign up" ? (
             <p
               className="text-sm text-gray-600"
-              onClick={() => setCurrState("Login")}
+              onClick={() => setCurrState("login")}
             >
-              Already have an account?{" "}
+              Already have an account? 
               <span className="font-medium text-violet-500 cursor-pointer">
                 Login here
               </span>
