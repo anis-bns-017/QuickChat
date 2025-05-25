@@ -35,6 +35,7 @@ export const ChatProvider = ({ children }) => {
     try {
       const { data } = await axios.get(`/api/messages/${userId}`);
       if (data.success) {
+        console.log("Messages fetched:", data.messages);
         setMessages(data.messages);
         // setSelectedUser(userId);
       }
