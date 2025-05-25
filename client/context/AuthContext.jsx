@@ -89,7 +89,6 @@ export const AuthProvider = ({ children }) => {
     if (!userData || socket) return; // prevent multiple connections
 
     const newSocket = io(backendUrl, {
-      // use backendUrl instead of hardcoded localhost
       path: "/socket.io",
       transports: ["websocket"],
       auth: {
@@ -108,6 +107,12 @@ export const AuthProvider = ({ children }) => {
 
     newSocket.on("connect_error", (err) => {
       console.error("Connection failed:", err.message);
+    });
+
+    // ✅ Listen for online users from server
+    newSocket.on("online-users", (userIds) => {
+      console.log("Online users updated:", userIds);
+      setOnlineUsers(userIds);
     });
 
     setSocket(newSocket);

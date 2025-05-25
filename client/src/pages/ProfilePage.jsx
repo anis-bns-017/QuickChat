@@ -80,8 +80,7 @@ const ProfilePage = () => {
             />
             {authUser?.profilePic
               ? "Change Profile Image"
-              : "Upload Profile Image"}{" "}
-            v
+              : "Upload Profile Image"}
           </label>
           <input
             onChange={(e) => setName(e.target.value)}
