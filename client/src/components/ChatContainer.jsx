@@ -130,13 +130,18 @@ const ChatContainer = () => {
       {/* -----------Bottom Area ------------ */}
       <div className="absolute bottom-0 flex left-0 right-0 items-center gap-3 p-3">
         <div className="flex-1 flex items-center bg-gray-100/12 px-3 rounded-full">
-          <input
-            onChange={(e) => setInput(e.target.value)}
-            type="text"
+          <textarea
+            rows={1}
             value={input}
-            onKeyDown={(e) => (e.key === "Enter" ? handleSendMessage(e) : null)}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault(); // prevent newline
+                handleSendMessage(e);
+              }
+            }}
             placeholder="Send a message"
-            className="flex-1 text-sm p-3 border-none rounded-lg outline-none text-white placeholder-gray-400"
+            className="flex-1 text-sm p-3 border-none rounded-lg outline-none resize-none text-white placeholder-gray-400 bg-transparent max-h-40 overflow-y-auto"
           />
           <input
             onChange={handleSendImage}

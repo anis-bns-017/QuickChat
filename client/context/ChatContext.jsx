@@ -20,15 +20,23 @@ export const ChatProvider = ({ children }) => {
   const getUsers = async () => {
     try {
       const { data } = await axios.get("/api/messages/users");
+
       if (data.success) {
         setUsers(data.users);
-        setUnseenMessages(data.unseenMessages);
+        setUnseenMessages(data.unseenMessages || {}); // Ensure it's always an object
+
+        // For debugging:
+        console.log("Users:", data.users);
+        console.log("Unseen Messages:", data.unseenMessages);
       }
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.response?.data?.message || error.message);
     }
   };
 
+  useEffect(() => {
+    getUsers();
+  }, []);
   //function to get messages for selected user
 
   const getMessages = async (userId) => {

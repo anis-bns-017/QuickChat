@@ -8,34 +8,40 @@ import { io, userSocketMap } from "../server.js";
 export const getUsersForSidebar = async (req, res) => {
   try {
     const userId = req.user._id;
+
+    // Get all users except the current user
     const filteredUsers = await User.find({ _id: { $ne: userId } }).select(
       "-password"
     );
-    const unseenMessages = await Message.find({ to: userId, seen: false });
-    const promises = filteredUsers.map(async (user) => {
-      const messages = await Message.find({
-        senderId: user._id,
-        receiverId: userId,
-        seen: false,
-      });
 
-      if (messages.length > 0) {
-        unseenMessages[user._id] = messages.length;
-      }
-    });
+    // Object to store unseen message counts
+    const unseenMessages = {};
 
-    await Promise.all(promises);
-    res.json({
+    // Check for unseen messages from each user
+    await Promise.all(
+      filteredUsers.map(async (user) => {
+        const count = await Message.countDocuments({
+          senderId: user._id,
+          receiverId: userId,
+          seen: false,
+        });
+
+        if (count > 0) {
+          unseenMessages[user._id] = count;
+        }
+      })
+    );
+
+    res.status(200).json({
       success: true,
-      message: "Users fetched successfully",
       users: filteredUsers,
-      unseenMessages,
+      unseenMessages, // This will be an object like { "userId1": 3, "userId2": 1 }
     });
   } catch (error) {
-    console.log(error.message);
-    res.json({
+    console.error("Error in getUsersForSidebar: ", error.message);
+    res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Internal server error",
     });
   }
 };
@@ -111,7 +117,6 @@ export const sendMessage = async (req, res) => {
       image: imageUrl,
     });
 
-    
     //emit the new message to the receiver's socket
     const receiverSocketId = userSocketMap[receiverId];
 
@@ -124,7 +129,6 @@ export const sendMessage = async (req, res) => {
       message: "Message sent successfully",
       newMessage,
     });
-    
   } catch (error) {
     console.log(error.message);
     res.json({

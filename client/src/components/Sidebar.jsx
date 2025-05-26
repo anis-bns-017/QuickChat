@@ -35,9 +35,7 @@ const Sidebar = () => {
 
   useEffect(() => {
     getUsers();
-  }, [onlineUsers]);
-
-  console.log("hey there user: ", onlineUsers);
+  }, [onlineUsers, selectedUser]);
 
   return (
     <div
@@ -85,7 +83,11 @@ const Sidebar = () => {
         {(filteredUsers || []).map((user, index) => (
           <div
             onClick={() => {
-              setSelectedUser(user);
+              setSelectedUser(user),
+                setUnseenMessages((prev) => ({
+                  ...prev,
+                  [user._id]: 0,
+                }));
             }}
             key={index}
             className={`relative flex items-center gap-2 p-2 pl-4 rounded cursor-pointer max-sm:text-sm
